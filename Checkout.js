@@ -15,13 +15,9 @@ export default {
   data () {
     return {
       stockCheckCompleted: false,
+      shipToMyAddress: false,
       stockCheckOK: false,
       confirmation: null, // order confirmation from server
-      activeSection: {
-        shipping: true,
-        payment: true,
-        orderReview: true
-      },
       order: {},
       personalDetails: {},
       shipping: {},
@@ -58,11 +54,10 @@ export default {
     this.$bus.$on('checkout-after-cartSummary', this.onAfterCartSummary);
     this.$bus.$on('checkout-before-placeOrder', this.onBeforePlaceOrder);
     this.$bus.$on('checkout-do-placeOrder', this.onDoPlaceOrder);
-    this.$bus.$on('checkout-before-edit', this.onBeforeEdit);
     this.$bus.$on('order-after-placed', this.onAfterPlaceOrder);
     this.$bus.$on('checkout-before-shippingMethods', this.onBeforeShippingMethods);
     this.$bus.$on('checkout-after-shippingMethodChanged', this.onAfterShippingMethodChanged);
-    this.$bus.$on('checkout-after-validationError', this.focusField);
+    this.$bus.$on('checkout-use-payment-to-shipping', this.usePaymentToShipping);
     if (!this.isThankYouPage) {
       this.$store.dispatch('cart/load', { forceClientState: true }).then(() => {
         if (this.$store.state.cart.cartItems.length === 0) {
@@ -115,19 +110,20 @@ export default {
     this.$bus.$off('checkout-after-shippingDetails', this.onAfterShippingDetails);
     this.$bus.$off('checkout-after-paymentDetails', this.onAfterPaymentDetails);
     this.$bus.$off('checkout-after-cartSummary', this.onAfterCartSummary);
-    this.$bus.$off('checkout-before-placeOrder', this.onBeforePlaceOrder);
+    this.$bus.$off('checkout-before-placeOrder', this.onDoPlaceOrder);
     this.$bus.$off('checkout-do-placeOrder', this.onDoPlaceOrder);
-    this.$bus.$off('checkout-before-edit', this.onBeforeEdit);
     this.$bus.$off('order-after-placed', this.onAfterPlaceOrder);
     this.$bus.$off('checkout-before-shippingMethods', this.onBeforeShippingMethods);
     this.$bus.$off('checkout-after-shippingMethodChanged', this.onAfterShippingMethodChanged);
-    this.$bus.$off('checkout-after-validationError', this.focusField);
+    this.$bus.$off('checkout-use-payment-to-shipping', this.usePaymentToShipping);
   },
   watch: {
-    '$route': 'activateHashSection',
     'OnlineOnly': 'onNetworkStatusCheck'
   },
   methods: {
+    usePaymentToShipping (update) {
+      this.shipToMyAddress = update;
+    },
     onCartAfterUpdate (payload) {
       if (this.$store.state.cart.cartItems.length === 0) {
         this.notifyEmptyCart();
@@ -149,9 +145,6 @@ export default {
       this.$store.dispatch('user/getOrdersHistory', { refresh: true, useCache: true });
       Logger.debug(payload.order)();
     },
-    onBeforeEdit (section) {
-      this.activateSection(section);
-    },
     onBeforePlaceOrder (payload) {
     },
     onAfterCartSummary (receivedData) {
@@ -169,27 +162,16 @@ export default {
     onAfterPaymentDetails (receivedData, validationResult) {
       this.payment = receivedData;
       this.validationResults.payment = validationResult;
-      this.activateSection('orderReview');
       this.savePaymentDetails();
     },
     onAfterShippingDetails (receivedData, validationResult) {
       this.shipping = receivedData;
       this.validationResults.shipping = validationResult;
-      this.activateSection('payment');
       this.saveShippingDetails();
-
-      const storeView = currentStoreView();
-      storeView.tax.defaultCountry = this.shipping.country;
     },
     onAfterPersonalDetails (receivedData, validationResult) {
       this.personalDetails = receivedData;
       this.validationResults.personalDetails = validationResult;
-
-      if (this.isVirtualCart === true) {
-        this.activateSection('payment');
-      } else {
-        this.activateSection('shipping');
-      }
       this.savePersonalDetails();
       this.focusedField = null;
     },
@@ -198,58 +180,34 @@ export default {
     },
     checkStocks () {
       let isValid = true;
-      for (let child of this.$children) {
-        if (child.hasOwnProperty('$v')) {
-          if (child.$v.$invalid) {
-            // Check if child component is Personal Details.
-            // If so, then ignore validation of account creation fields.
-            if (child.$v.hasOwnProperty('personalDetails')) {
-              if (child.$v.personalDetails.$invalid) {
-                isValid = false;
-                break;
-              }
-            } else {
-              isValid = false;
-              break;
-            }
-          }
-        }
-      }
-
-      if (typeof navigator !== 'undefined' && navigator.onLine) {
-        if (this.stockCheckCompleted) {
-          if (!this.stockCheckOK) {
-            isValid = false;
-            this.notifyNotAvailable();
-          }
-        } else {
-          this.notifyStockCheck();
-          isValid = false;
-        }
-      }
+      // for (let child of this.$children) {
+      //   if (child.hasOwnProperty('$v')) {
+      //     if (child.$v.$invalid) {
+      //       // Check if child component is Personal Details.
+      //       // If so, then ignore validation of account creation fields.
+      //       isValid = false;
+      //       break;
+      //     }
+      //   }
+      // }
+      //
+      // if (typeof navigator !== 'undefined' && navigator.onLine) {
+      //   if (this.stockCheckCompleted) {
+      //     if (!this.stockCheckOK) {
+      //       isValid = false;
+      //       this.notifyNotAvailable();
+      //     }
+      //   } else {
+      //     this.notifyStockCheck();
+      //     isValid = false;
+      //   }
+      // }
       return isValid;
-    },
-    activateHashSection () {
-      if (!isServer) {
-        var urlStep = window.location.hash.replace('#', '');
-        if (this.activeSection.hasOwnProperty(urlStep) && this.activeSection[urlStep] === false) {
-          this.activateSection(urlStep);
-        } else if (urlStep === '') {
-          this.activateSection('personalDetails');
-        }
-      }
     },
     checkConnection (isOnline) {
       if (!isOnline) {
         this.notifyNoConnection();
       }
-    },
-    activateSection (sectionToActivate) {
-      for (let section in this.activeSection) {
-        this.activeSection[section] = false;
-      }
-      this.activeSection[sectionToActivate] = true;
-      if (!isServer) window.location.href = window.location.origin + window.location.pathname + '#' + sectionToActivate;
     },
     // This method checks if there exists a mapping of chosen payment method to one of Magento's payment methods.
     getPaymentMethod () {
@@ -268,12 +226,12 @@ export default {
           billingAddress: {
             region: this.payment.state,
             region_id: this.payment.region_id ? this.payment.region_id : 0,
-            country_id: this.payment.country,
-            street: [this.payment.streetAddress, this.payment.apartmentNumber],
+            country_id: this.shipping.country,
+            street: [this.shipping.streetAddress, this.shipping.apartmentNumber ? this.shipping.apartmentNumber : this.shipping.streetAddress],
             company: this.payment.company,
             telephone: this.payment.phoneNumber,
-            postcode: this.payment.zipCode,
-            city: this.payment.city,
+            postcode: config.tax.defaultZipCode,
+            city: this.shipping.city,
             firstname: this.payment.firstName,
             lastname: this.payment.lastName,
             email: this.payment.emailAddress,
@@ -288,24 +246,42 @@ export default {
         }
       };
       if (!this.isVirtualCart) {
-        this.order.addressInformation.shippingAddress = {
-          region: this.shipping.state,
-          region_id: this.shipping.region_id ? this.shipping.region_id : 0,
-          country_id: this.shipping.country,
-          street: [this.shipping.streetAddress, this.shipping.apartmentNumber],
-          company: '',
-          telephone: this.shipping.phoneNumber,
-          postcode: this.shipping.zipCode,
-          city: this.shipping.city,
-          firstname: this.shipping.firstName,
-          lastname: this.shipping.lastName,
-          email: this.payment.emailAddress,
-          region_code: this.shipping.region_code ? this.shipping.region_code : ''
-        };
+        if (!this.shipToMyAddress) {
+          this.order.addressInformation.shippingAddress = {
+            region: this.payment.state,
+            region_id: this.payment.region_id ? this.payment.region_id : 0,
+            country_id: this.shipping.country,
+            street: [this.shipping.streetAddress, this.shipping.apartmentNumber ? this.shipping.apartmentNumber : this.shipping.streetAddress],
+            company: '',
+            telephone: this.payment.phoneNumber,
+            postcode: config.tax.defaultZipCode,
+            city: this.shipping.city,
+            firstname: this.payment.firstName,
+            lastname: this.payment.lastName,
+            email: this.payment.emailAddress,
+            region_code: this.payment.region_code ? this.payment.region_code : ''
+          };
+        } else {
+          this.order.addressInformation.shippingAddress = {
+            region: this.shipping.state,
+            region_id: this.shipping.region_id ? this.shipping.region_id : 0,
+            country_id: this.shipping.country,
+            street: [this.shipping.streetAddress, this.shipping.apartmentNumber ? this.shipping.apartmentNumber : this.shipping.streetAddress],
+            company: '',
+            telephone: this.payment.phoneNumber,
+            postcode: config.tax.defaultZipCode,
+            city: this.shipping.city,
+            firstname: this.shipping.firstName,
+            lastname: this.shipping.lastName,
+            email: this.payment.emailAddress,
+            region_code: this.shipping.region_code ? this.shipping.region_code : ''
+          };
+        }
       }
       return this.order;
     },
     placeOrder () {
+      console.log(this.checkStocks());
       this.checkConnection({ online: typeof navigator !== 'undefined' ? navigator.onLine : true });
       if (this.checkStocks()) {
         this.$store.dispatch('checkout/placeOrder', { order: this.prepareOrder() });
@@ -321,18 +297,6 @@ export default {
     },
     savePaymentDetails () {
       this.$store.dispatch('checkout/savePaymentDetails', this.payment);
-    },
-    focusField (fieldName) {
-      if (fieldName === 'password') {
-        window.scrollTo(0, 0);
-        this.activateSection('personalDetails');
-        this.focusedField = fieldName;
-      }
-      if (fieldName === 'email-address') {
-        window.scrollTo(0, 0);
-        this.activateSection('personalDetails');
-        this.focusedField = fieldName;
-      }
     }
   },
   metaInfo () {

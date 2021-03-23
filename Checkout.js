@@ -18,10 +18,9 @@ export default {
       stockCheckOK: false,
       confirmation: null, // order confirmation from server
       activeSection: {
-        personalDetails: true,
-        shipping: false,
-        payment: false,
-        orderReview: false
+        shipping: true,
+        payment: true,
+        orderReview: true
       },
       order: {},
       personalDetails: {},
@@ -46,6 +45,8 @@ export default {
   },
   async beforeMount () {
     await this.$store.dispatch('checkout/load');
+    await this.$store.dispatch('checkoutLocal/fetchNovaCityCollection');
+    await this.$store.dispatch('checkoutLocal/fetchCityCollection');
     this.$bus.$emit('checkout-after-load');
     this.$store.dispatch('checkout/setModifiedAt', Date.now());
     // TODO: Use one event with name as apram
@@ -275,7 +276,7 @@ export default {
             city: this.payment.city,
             firstname: this.payment.firstName,
             lastname: this.payment.lastName,
-            email: this.personalDetails.emailAddress,
+            email: this.payment.emailAddress,
             region_code: this.payment.region_code ? this.payment.region_code : '',
             vat_id: this.payment.taxId
           },
@@ -298,7 +299,7 @@ export default {
           city: this.shipping.city,
           firstname: this.shipping.firstName,
           lastname: this.shipping.lastName,
-          email: this.personalDetails.emailAddress,
+          email: this.payment.emailAddress,
           region_code: this.shipping.region_code ? this.shipping.region_code : ''
         };
       }

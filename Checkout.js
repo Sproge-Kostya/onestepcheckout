@@ -15,7 +15,7 @@ export default {
   data () {
     return {
       stockCheckCompleted: false,
-      shipToMyAddress: false,
+      useOtherAddress: false,
       stockCheckOK: false,
       confirmation: null, // order confirmation from server
       order: {},
@@ -122,7 +122,7 @@ export default {
   },
   methods: {
     usePaymentToShipping (update) {
-      this.shipToMyAddress = update;
+      this.useOtherAddress = update;
     },
     onCartAfterUpdate (payload) {
       if (this.$store.state.cart.cartItems.length === 0) {
@@ -135,6 +135,8 @@ export default {
       this.shippingMethod = payload;
     },
     onBeforeShippingMethods (country) {
+      const storeView = currentStoreView();
+      if (!country) country = storeView.i18n.defaultCountry;
       this.$store.dispatch('checkout/updatePropValue', ['country', country]);
       this.$store.dispatch('cart/syncTotals', { forceServerSync: true });
       this.$forceUpdate();
@@ -243,7 +245,7 @@ export default {
         }
       };
       if (!this.isVirtualCart) {
-        if (!this.shipToMyAddress) {
+        if (!this.useOtherAddress) {
           this.order.addressInformation.shippingAddress = {
             region: this.payment.state,
             region_id: this.payment.region_id ? this.payment.region_id : 0,
@@ -260,12 +262,12 @@ export default {
           };
         } else {
           this.order.addressInformation.shippingAddress = {
-            region: this.shipping.state,
-            region_id: this.shipping.region_id ? this.shipping.region_id : 0,
+            region: this.payment.state,
+            region_id: this.payment.region_id ? this.payment.region_id : 0,
             country_id: this.shipping.country,
             street: [this.shipping.streetAddress, this.shipping.apartmentNumber ? this.shipping.apartmentNumber : this.shipping.streetAddress],
             company: '',
-            telephone: this.payment.phoneNumber,
+            telephone: this.shipping.phoneNumber,
             postcode: config.tax.defaultZipCode,
             city: this.shipping.city,
             firstname: this.shipping.firstName,

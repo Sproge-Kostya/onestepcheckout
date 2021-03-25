@@ -180,28 +180,25 @@ export default {
     },
     checkStocks () {
       let isValid = true;
-      // for (let child of this.$children) {
-      //   if (child.hasOwnProperty('$v')) {
-      //     if (child.$v.$invalid) {
-      //       // Check if child component is Personal Details.
-      //       // If so, then ignore validation of account creation fields.
-      //       isValid = false;
-      //       break;
-      //     }
-      //   }
-      // }
-      //
-      // if (typeof navigator !== 'undefined' && navigator.onLine) {
-      //   if (this.stockCheckCompleted) {
-      //     if (!this.stockCheckOK) {
-      //       isValid = false;
-      //       this.notifyNotAvailable();
-      //     }
-      //   } else {
-      //     this.notifyStockCheck();
-      //     isValid = false;
-      //   }
-      // }
+      for (let child of this.$children) {
+        if (child.hasOwnProperty('$v')) {
+          if (child.$v.$invalid) {
+            // Check if child component is Personal Details.
+            // If so, then ignore validation of account creation fields.
+            isValid = false;
+            break;
+          }
+        }
+      }
+
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        if (!this.stockCheckCompleted) {
+          if (!this.stockCheckOK) {
+            isValid = false;
+            this.notifyNotAvailable();
+          }
+        }
+      }
       return isValid;
     },
     checkConnection (isOnline) {

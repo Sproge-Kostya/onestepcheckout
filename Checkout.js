@@ -110,7 +110,7 @@ export default {
     this.$bus.$off('checkout-after-shippingDetails', this.onAfterShippingDetails);
     this.$bus.$off('checkout-after-paymentDetails', this.onAfterPaymentDetails);
     this.$bus.$off('checkout-after-cartSummary', this.onAfterCartSummary);
-    this.$bus.$off('checkout-before-placeOrder', this.onDoPlaceOrder);
+    this.$bus.$off('checkout-before-placeOrder', this.onBeforePlaceOrder);
     this.$bus.$off('checkout-do-placeOrder', this.onDoPlaceOrder);
     this.$bus.$off('order-after-placed', this.onAfterPlaceOrder);
     this.$bus.$off('checkout-before-shippingMethods', this.onBeforeShippingMethods);

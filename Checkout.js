@@ -25,6 +25,7 @@ export default {
       payment: {},
       orderReview: {},
       cartSummary: {},
+      comment: '',
       validationResults: {
         personalDetails: { $invalid: true },
         shipping: { $invalid: true },
@@ -36,7 +37,8 @@ export default {
   computed: {
     ...mapGetters({
       isVirtualCart: 'cart/isVirtualCart',
-      isThankYouPage: 'checkout/isThankYouPage'
+      isThankYouPage: 'checkout/isThankYouPage',
+      cartId: 'cart/getCartToken'
     })
   },
   async beforeMount () {
@@ -51,6 +53,7 @@ export default {
     this.$bus.$on('checkout-after-personalDetails', this.onAfterPersonalDetails);
     this.$bus.$on('checkout-after-shippingDetails', this.onAfterShippingDetails);
     this.$bus.$on('checkout-after-paymentDetails', this.onAfterPaymentDetails);
+    this.$bus.$on('checkout-after-orderReview', this.onAfterOrderReview);
     this.$bus.$on('checkout-after-cartSummary', this.onAfterCartSummary);
     this.$bus.$on('checkout-before-placeOrder', this.onBeforePlaceOrder);
     this.$bus.$on('checkout-do-placeOrder', this.onDoPlaceOrder);
@@ -109,6 +112,7 @@ export default {
     this.$bus.$off('checkout-after-personalDetails', this.onAfterPersonalDetails);
     this.$bus.$off('checkout-after-shippingDetails', this.onAfterShippingDetails);
     this.$bus.$off('checkout-after-paymentDetails', this.onAfterPaymentDetails);
+    this.$bus.$off('checkout-after-orderReview', this.onAfterOrderReview);
     this.$bus.$off('checkout-after-cartSummary', this.onAfterCartSummary);
     this.$bus.$off('checkout-before-placeOrder', this.onBeforePlaceOrder);
     this.$bus.$off('checkout-do-placeOrder', this.onDoPlaceOrder);
@@ -121,6 +125,9 @@ export default {
     'OnlineOnly': 'onNetworkStatusCheck'
   },
   methods: {
+    onAfterOrderReview (comment) {
+      this.comment = comment;
+    },
     usePaymentToShipping (update) {
       this.useOtherAddress = update;
     },
@@ -203,6 +210,25 @@ export default {
       }
       return isValid;
     },
+    async sendComment () {
+      const url = `${config.api.url}/api/ext/itdelight-checkout/guest-carts/${this.cartId}/set-order-comment`;
+      const data = {
+        'cartId': this.cartId,
+        'orderComment': { 'comment': this.comment }
+      };
+
+      try {
+        await fetch(url, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        }).then(response => response.json()).then(data => console.log(data));
+      } catch (err) {
+        console.log(err);
+      }
+    },
     checkConnection (isOnline) {
       if (!isOnline) {
         this.notifyNoConnection();
@@ -280,9 +306,9 @@ export default {
       return this.order;
     },
     placeOrder () {
-      console.log(this.checkStocks());
       this.checkConnection({ online: typeof navigator !== 'undefined' ? navigator.onLine : true });
       if (this.checkStocks()) {
+        this.sendComment();
         this.$store.dispatch('checkout/placeOrder', { order: this.prepareOrder() });
       } else {
         this.notifyNotAvailable();

@@ -211,7 +211,7 @@ export default {
       return isValid;
     },
     async sendComment () {
-      const url = `${config.api.url}/api/ext/itdelight-checkout/guest-carts/${this.cartId}/set-order-comment`;
+      const url = `${config.api.url}/api/ext/kraina/checkout/guest-carts/${this.cartId}/set-order-comment`;
       const data = {
         'cartId': this.cartId,
         'orderComment': { 'comment': this.comment }

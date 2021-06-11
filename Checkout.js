@@ -44,7 +44,6 @@ export default {
   async beforeMount () {
     await this.$store.dispatch('checkout/load');
     await this.$store.dispatch('checkoutLocal/fetchNovaCityCollection');
-    await this.$store.dispatch('checkoutLocal/fetchCityCollection');
     this.$bus.$emit('checkout-after-load');
     this.$store.dispatch('checkout/setModifiedAt', Date.now());
     // TODO: Use one event with name as apram

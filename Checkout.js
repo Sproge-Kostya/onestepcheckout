@@ -307,10 +307,12 @@ export default {
     placeOrder () {
       this.checkConnection({ online: typeof navigator !== 'undefined' ? navigator.onLine : true });
       if (this.checkStocks()) {
-        this.sendComment();
+        if (this.comment) {
+          this.sendComment();
+        }
         this.$store.dispatch('checkout/placeOrder', { order: this.prepareOrder() });
       } else {
-        this.notifyNotAvailable();
+        this.notifyValidData();
       }
     },
     savePersonalDetails () {

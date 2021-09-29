@@ -150,7 +150,7 @@ export default {
         countryId: this.shipping.country,
         postcode: config.tax.defaultZipCode,
         cartId: this.$store.state.cart.cartServerToken ? this.$store.state.cart.cartServerToken.toString() : '',
-        email: this.payment.emailAddress,
+        email: this.payment.emailAddress ? this.payment.emailAddress : '',
         paymentMethod: {
           method: this.selectedPayment ? this.selectedPayment : this.getPaymentMethod(),
           extension_attributes: {

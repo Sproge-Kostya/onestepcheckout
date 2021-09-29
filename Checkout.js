@@ -24,6 +24,7 @@ export default {
       shippingMethod: {},
       payment: {},
       orderReview: {},
+      agreementIds: [],
       cartSummary: {},
       comment: '',
       validationResults: {
@@ -38,7 +39,8 @@ export default {
     ...mapGetters({
       isVirtualCart: 'cart/isVirtualCart',
       isThankYouPage: 'checkout/isThankYouPage',
-      cartId: 'cart/getCartToken'
+      cartId: 'cart/getCartToken',
+      getAgreements: 'checkoutLocal/getAgreements'
     })
   },
   async beforeMount () {
@@ -136,6 +138,33 @@ export default {
         this.$router.push(this.localizedRoute('/'));
       }
     },
+    async onAfterPaymentMethodChanged (payload) {
+      const storeView = currentStoreView();
+      let country = this.$store.state.checkout.shippingDetails.country;
+      if (!country) country = storeView.i18n.defaultCountry;
+      const data = {
+        billingAddress: {
+          countryId: country,
+          postcode: config.tax.defaultZipCode
+        },
+        countryId: this.shipping.country,
+        postcode: config.tax.defaultZipCode,
+        cartId: this.$store.state.cart.cartServerToken ? this.$store.state.cart.cartServerToken.toString() : '',
+        email: this.payment.emailAddress,
+        paymentMethod: {
+          method: this.selectedPayment ? this.selectedPayment : this.getPaymentMethod(),
+          extension_attributes: {
+            agreement_ids: this.getAgreements
+          }
+        },
+        extension_attributes: { agreement_ids: this.getAgreements },
+        agreement_ids: this.getAgreements,
+        method: this.selectedPayment ? this.selectedPayment : this.getPaymentMethod()
+      };
+      await this.$store.dispatch('checkoutLocal/setPaymentInformation', { data });
+      await this.$store.dispatch('cart/syncTotals', { forceServerSync: true, methodsData: payload });
+      this.shippingMethod = payload;
+    },
     async onAfterShippingMethodChanged (payload) {
       await this.$store.dispatch('cart/syncTotals', { forceServerSync: true, methodsData: payload });
       this.shippingMethod = payload;
@@ -171,6 +200,7 @@ export default {
       this.payment = receivedData;
       this.validationResults.payment = validationResult;
       this.savePaymentDetails();
+      this.onAfterPaymentMethodChanged();
     },
     onAfterShippingDetails (receivedData, validationResult) {
       this.shipping = receivedData;

@@ -161,7 +161,7 @@ export default {
         agreement_ids: this.getAgreements,
         method: this.selectedPayment ? this.selectedPayment : this.getPaymentMethod()
       };
-      await this.$store.dispatch('checkoutLocal/setPaymentInformation', { data });
+      await this.$store.dispatch('checkoutLocal/setPaymentInformation', { data, isLogin: !!this.$store.state.user.current });
       await this.$store.dispatch('cart/syncTotals', { forceServerSync: true, methodsData: payload });
       this.shippingMethod = payload;
     },

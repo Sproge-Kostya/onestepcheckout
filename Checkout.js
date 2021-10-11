@@ -14,6 +14,7 @@ export default {
   mixins: [Composite, VueOfflineMixin],
   data () {
     return {
+      loadPaymentStatus: false,
       stockCheckCompleted: false,
       useOtherAddress: false,
       stockCheckOK: false,
@@ -138,14 +139,27 @@ export default {
         this.$router.push(this.localizedRoute('/'));
       }
     },
-    async onAfterPaymentMethodChanged (payload) {
+    async onAfterPaymentMethodChanged () {
+      if (this.loadPaymentStatus) return;
+      this.loadPaymentStatus = true;
       const storeView = currentStoreView();
       let country = this.$store.state.checkout.shippingDetails.country;
       if (!country) country = storeView.i18n.defaultCountry;
       const data = {
         billingAddress: {
-          countryId: country,
-          postcode: config.tax.defaultZipCode
+          region: this.payment.state,
+          region_id: this.payment.region_id ? this.payment.region_id : 0,
+          country_id: this.shipping.country,
+          street: [this.shipping.streetAddress, this.shipping.apartmentNumber ? this.shipping.apartmentNumber : this.shipping.streetAddress],
+          company: this.payment.company,
+          telephone: this.payment.phoneNumber,
+          postcode: config.tax.defaultZipCode,
+          city: this.shipping.city,
+          firstname: this.payment.firstName,
+          lastname: this.payment.lastName,
+          email: this.payment.emailAddress,
+          region_code: this.payment.region_code ? this.payment.region_code : '',
+          vat_id: this.payment.taxId
         },
         countryId: this.shipping.country,
         postcode: config.tax.defaultZipCode,
@@ -162,8 +176,8 @@ export default {
         method: this.selectedPayment ? this.selectedPayment : this.getPaymentMethod()
       };
       await this.$store.dispatch('checkoutLocal/setPaymentInformation', { data, isLogin: !!this.$store.state.user.current });
-      await this.$store.dispatch('cart/syncTotals', { forceServerSync: true, methodsData: payload });
-      this.shippingMethod = payload;
+      await this.$store.dispatch('cart/syncTotals', { forceServerSync: true, methodsData: this.shippingMethod });
+      this.loadPaymentStatus = false;
     },
     async onAfterShippingMethodChanged (payload) {
       await this.$store.dispatch('cart/syncTotals', { forceServerSync: true, methodsData: payload });
@@ -340,7 +354,9 @@ export default {
         if (this.comment) {
           this.sendComment();
         }
-        this.$store.dispatch('checkout/placeOrder', { order: this.prepareOrder() });
+        this.onAfterPaymentMethodChanged().then(r => {
+          this.$store.dispatch('checkout/placeOrder', { order: this.prepareOrder() });
+        });
       } else {
         this.notifyValidData();
       }

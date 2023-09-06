@@ -1,4 +1,3 @@
-import Vue from 'vue';
 import i18n from '@vue-storefront/i18n';
 import config from 'config';
 import VueOfflineMixin from 'vue-offline/mixin';
@@ -6,7 +5,6 @@ import { mapGetters } from 'vuex';
 import { StorageManager } from '@vue-storefront/core/lib/storage-manager';
 import Composite from '@vue-storefront/core/mixins/composite';
 import { currentStoreView, localizedRoute } from '@vue-storefront/core/lib/multistore';
-import { isServer } from '@vue-storefront/core/helpers';
 import { Logger } from '@vue-storefront/core/lib/logger';
 
 export default {
@@ -22,6 +20,7 @@ export default {
       order: {},
       personalDetails: {},
       shipping: {},
+      internationalDelivery: {},
       shippingMethod: {},
       payment: {},
       orderReview: {},
@@ -49,11 +48,12 @@ export default {
     await this.$store.dispatch('checkoutLocal/fetchNovaCityCollection');
     this.$bus.$emit('checkout-after-load');
     this.$store.dispatch('checkout/setModifiedAt', Date.now());
-    // TODO: Use one event with name as apram
+    // TODO: Use one event with name as param
     this.$bus.$on('cart-after-update', this.onCartAfterUpdate);
     this.$bus.$on('cart-after-delete', this.onCartAfterUpdate);
     this.$bus.$on('checkout-after-personalDetails', this.onAfterPersonalDetails);
     this.$bus.$on('checkout-after-shippingDetails', this.onAfterShippingDetails);
+    this.$bus.$on('checkout-after-internationalDelivery', this.onAfterInternationalDelivery);
     this.$bus.$on('checkout-after-paymentDetails', this.onAfterPaymentDetails);
     this.$bus.$on('checkout-after-orderReview', this.onAfterOrderReview);
     this.$bus.$on('checkout-after-cartSummary', this.onAfterCartSummary);
@@ -113,6 +113,7 @@ export default {
     this.$bus.$off('cart-after-delete', this.onCartAfterUpdate);
     this.$bus.$off('checkout-after-personalDetails', this.onAfterPersonalDetails);
     this.$bus.$off('checkout-after-shippingDetails', this.onAfterShippingDetails);
+    this.$bus.$off('checkout-after-internationalDelivery', this.onAfterInternationalDelivery);
     this.$bus.$off('checkout-after-paymentDetails', this.onAfterPaymentDetails);
     this.$bus.$off('checkout-after-orderReview', this.onAfterOrderReview);
     this.$bus.$off('checkout-after-cartSummary', this.onAfterCartSummary);
@@ -138,6 +139,16 @@ export default {
         this.notifyEmptyCart();
         this.$router.push(this.localizedRoute('/'));
       }
+    },
+    onAfterInternationalDelivery (receivedData, validationResult) {
+      this.internationalDelivery = receivedData;
+      this.validationResults.internationalDelivery = validationResult;
+      const data = {
+        'cartId': this.cartId,
+        'customFields': this.internationalDelivery
+      };
+      const isLogin = !!this.$store.state.user.current;
+      this.$store.dispatch('checkoutLocal/setInternationalDelivery', { data: data, isLogin: isLogin });
     },
     async onAfterPaymentMethodChanged () {
       if (this.loadPaymentStatus) return;
@@ -217,6 +228,7 @@ export default {
       this.onAfterPaymentMethodChanged();
     },
     onAfterShippingDetails (receivedData, validationResult) {
+      console.log(receivedData);
       this.shipping = receivedData;
       this.validationResults.shipping = validationResult;
       this.saveShippingDetails();

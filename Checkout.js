@@ -6,6 +6,7 @@ import { StorageManager } from '@vue-storefront/core/lib/storage-manager';
 import Composite from '@vue-storefront/core/mixins/composite';
 import { currentStoreView, localizedRoute } from '@vue-storefront/core/lib/multistore';
 import { Logger } from '@vue-storefront/core/lib/logger';
+import { isServer } from '@vue-storefront/core/helpers';
 
 export default {
   name: 'Checkout',

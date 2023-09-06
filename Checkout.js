@@ -247,6 +247,7 @@ export default {
       let isValid = true;
       for (let child of this.$children) {
         if (child.hasOwnProperty('$v')) {
+          console.log('Valid', child.$vnode.componentOptions.tag, ' : ', child.$v.$invalid);
           if (child.$v.$invalid) {
             // Check if child component is Personal Details.
             // If so, then ignore validation of account creation fields.

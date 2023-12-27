@@ -41,7 +41,8 @@ export default {
       isVirtualCart: 'cart/isVirtualCart',
       isThankYouPage: 'checkout/isThankYouPage',
       cartId: 'cart/getCartToken',
-      getAgreements: 'checkoutLocal/getAgreements'
+      getAgreements: 'checkoutLocal/getAgreements',
+      getTotals: 'themeCart/getTotalsCheckout'
     })
   },
   async beforeMount () {
@@ -304,6 +305,7 @@ export default {
         user_id: this.$store.state.user.current ? this.$store.state.user.current.id.toString() : '',
         cart_id: this.$store.state.cart.cartServerToken ? this.$store.state.cart.cartServerToken.toString() : '',
         products: this.$store.state.cart.cartItems,
+        totals: this.getTotals,
         addressInformation: {
           billingAddress: {
             region: this.payment.state,

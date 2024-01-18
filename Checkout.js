@@ -6,7 +6,6 @@ import { StorageManager } from '@vue-storefront/core/lib/storage-manager';
 import Composite from '@vue-storefront/core/mixins/composite';
 import { currentStoreView, localizedRoute } from '@vue-storefront/core/lib/multistore';
 import { Logger } from '@vue-storefront/core/lib/logger';
-import { isServer } from '@vue-storefront/core/helpers';
 
 export default {
   name: 'Checkout',
@@ -230,7 +229,6 @@ export default {
       this.onAfterPaymentMethodChanged();
     },
     onAfterShippingDetails (receivedData, validationResult) {
-      console.log(receivedData);
       this.shipping = receivedData;
       this.validationResults.shipping = validationResult;
       this.saveShippingDetails();
@@ -322,8 +320,8 @@ export default {
             region_code: this.payment.region_code ? this.payment.region_code : '',
             vat_id: this.payment.taxId
           },
-          shipping_method_code: this.shippingMethod.method_code ? this.shippingMethod.method_code : this.shipping.shippingMethod,
-          shipping_carrier_code: this.shippingMethod.carrier_code ? this.shippingMethod.carrier_code : this.shipping.shippingCarrier,
+          shipping_method_code: this.shippingMethod?.method_code ? this.shippingMethod.method_code : this.shipping.shippingMethod,
+          shipping_carrier_code: this.shippingMethod?.carrier_code ? this.shippingMethod.carrier_code : this.shipping.shippingCarrier,
           payment_method_code: this.getPaymentMethod(),
           payment_method_additional: this.payment.paymentMethodAdditional,
           shippingExtraFields: this.shipping.extraFields
@@ -362,6 +360,7 @@ export default {
           };
         }
       }
+      console.log(this.order);
       return this.order;
     },
     placeOrder () {

@@ -202,8 +202,18 @@ export default {
       this.$store.dispatch('cart/syncTotals', { forceServerSync: true });
       this.$forceUpdate();
     },
+    beforePlaceOrderToLiqPay (payload) {
+      const cartId = payload.order.cart_id;
+      const orderNumber = payload.confirmation.orderNumber;
+      this.$store.dispatch('checkoutLocal/liqPayOrder', { orderNumber, cartId });
+    },
     async onAfterPlaceOrder (payload) {
       this.confirmation = payload.confirmation;
+
+      if (this.order.addressInformation.payment_method_code === 'liqpaymagento_liqpay') {
+        this.beforePlaceOrderToLiqPay(payload);
+      }
+
       this.$store.dispatch('checkout/setThankYouPage', true);
       this.$store.dispatch('user/getOrdersHistory', { refresh: true, useCache: true });
       Logger.debug(payload.order)();
@@ -360,7 +370,6 @@ export default {
           };
         }
       }
-      console.log(this.order);
       return this.order;
     },
     placeOrder () {
